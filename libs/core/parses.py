@@ -11,14 +11,15 @@ import libs.core as cores
 
 class ParsesThreads(threading.Thread):
 
-    def __init__(self, threadID, name, file_queue, result_dict, types):
-        threading.Thread.__init__(self)
+    def __init__(self, threadID, name, file_queue, result_dict, types, dict_lock):
+        super().__init__()
         self.file_queue = file_queue
         self.name = name
         self.threadID = threadID
         self.result_list = []
         self.result_dict = result_dict
         self.types = types
+        self.dict_lock = dict_lock
 
     def __regular_parse__(self):
         while True:
@@ -34,7 +35,8 @@ class ParsesThreads(threading.Thread):
 
             result_set = set(self.result_list)
             if len(result_set) != 0:
-                self.result_dict[file_path] = result_set
+                with self.dict_lock:
+                    self.result_dict[file_path] = result_set
 
     def __get_string_by_iOS__(self, file_path):
         output_path = cores.output_path

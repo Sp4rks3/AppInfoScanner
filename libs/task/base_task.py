@@ -3,15 +3,17 @@
 # Author: kelvinBen
 # Github: https://github.com/kelvinBen/AppInfoScanner
 import os
-import config
+import threading
 from queue import Queue
+
+import config
 import libs.core as cores
-from libs.task.ios_task import iOSTask
-from libs.task.web_task import WebTask
-from libs.task.net_task import NetTask
 from libs.core.parses import ParsesThreads
 from libs.task.android_task import AndroidTask
 from libs.task.download_task import DownloadTask
+from libs.task.ios_task import iOSTask
+from libs.task.net_task import NetTask
+from libs.task.web_task import WebTask
 
 
 class BaseTask(object):
@@ -96,10 +98,11 @@ class BaseTask(object):
         return task_info
 
     def __threads_control__(self, file_queue):
+        dict_lock = threading.Lock()
         for threadID in range(1, self.threads):
             name = "Thread - " + str(int(threadID))
             thread = ParsesThreads(
-                threadID, name, file_queue, self.result_dict, self.types)
+                threadID, name, file_queue, self.result_dict, self.types, dict_lock)
             thread.start()
             self.thread_list.append(thread)
 
