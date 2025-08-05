@@ -335,31 +335,86 @@ class AndroidTask(object):
         if len(flag) > 0:
             self.__android_unpack__()
         print("We can't detect protect")
+    def __is_device_rooted(self):
+        cmd = [cores.adb_path, "shell", "whoami"]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        return result.returncode == 0 and result.stdout.strip() == "root"
+
+    def __has_su(self):
+        cmd = [cores.adb_path, "shell", "which su"]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        return result.returncode == 0 and result.stdout.strip() != ""
 
     def __android_unpack__(self):
         print('[*] unpacking')
         cmd_str = ('%s install %s') % (str(cores.adb_path), str(self.path))
         print('[*] Install the APK')
-        if os.system(cmd_str) == 0:
-            print("Push Frida Server")
-            cmd_str = ('%s push %s /data/local/tmp') % (str(cores.adb_path), str(cores.frida32_path))
-            cmd_str1 = ('%s push %s /data/local/tmp') % (str(cores.adb_path), str(cores.frida64_path))
-            cmd_str2 = ('%s shell su -c "chmod 777 /data/local/tmp/hexl-server-arm64"') % (str(cores.adb_path))
-            cmd_str3 = ('%s shell su -c "setenforce 0"') % (str(cores.adb_path))
-            cmd_str4 = ('%s shell su -c "./data/local/tmp/hexl-server-arm64 &"') % (str(cores.adb_path))
-            print("[*] Running Frida Server")
-            if os.system(cmd_str) == 0 and os.system(cmd_str1) == 0 and os.system(cmd_str2) == 0 \
-                    and os.system(cmd_str3) == 0 and os.system(cmd_str4) == 0:
-                print("[*] Frida Server started")
-            else:
-                print("[-] Running failed, please check the error in terminal")
-                exit()
-        else:
+        if os.system(cmd_str) != 0:
             print("[-] We can't install the APP")
             exit()
-        get_info_command = "%s dump badging %s" % (cores.aapt_apth, self.path)
-        pip = os.popen(get_info_command)
-        output = pip.buffer.read().decode('utf-8', 'ignore')
+
+        print("Push Frida Server")
+
+        def run_cmd(cmd):
+            print(f"Running command:\n  {cmd}")
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            print(f"Return code: {result.returncode}")
+            if result.stdout.strip():
+                print(f"STDOUT:\n{result.stdout.strip()}")
+            if result.stderr.strip():
+                print(f"STDERR:\n{result.stderr.strip()}")
+            return result.returncode == 0
+
+        rooted = self.__is_device_rooted()
+        su_available = self.__has_su()
+        print(f"Device rooted: {rooted}, su available: {su_available}")
+
+        cmd_pairs = [
+            (
+                f"{cores.adb_path} push {cores.frida32_path} /data/local/tmp",
+                f"{cores.adb_path} push {cores.frida32_path} /data/local/tmp",
+            ),
+            (
+                f"{cores.adb_path} push {cores.frida64_path} /data/local/tmp",
+                f"{cores.adb_path} push {cores.frida64_path} /data/local/tmp",
+            ),
+            (
+                f"{cores.adb_path} shell su -c \"chmod 777 /data/local/tmp/hexl-server-arm64\"",
+                f"{cores.adb_path} shell \"chmod 777 /data/local/tmp/hexl-server-arm64\"",
+            ),
+            (
+                f"{cores.adb_path} shell su -c \"setenforce 0\"",
+                f"{cores.adb_path} shell \"setenforce 0\"",
+            ),
+            (
+                f"{cores.adb_path} shell su -c \"/data/local/tmp/hexl-server-arm64 &\"",
+                f"{cores.adb_path} shell \"/data/local/tmp/hexl-server-arm64 &\"",
+            ),
+        ]
+
+        for root_cmd, non_root_cmd in cmd_pairs:
+            cmd_to_run = root_cmd if su_available else non_root_cmd
+            if not run_cmd(cmd_to_run):
+                if su_available and root_cmd != non_root_cmd:
+                    print("[-] Command with su failed, retrying without su")
+                    if run_cmd(non_root_cmd):
+                        continue
+                print("[-] Running failed, please check the error in terminal")
+                exit()
+
+        print("[*] Frida Server started")
+        aapt_cmd = cores.aapt_path or shutil.which("aapt")
+        if not aapt_cmd:
+            raise Exception("aapt not found: %s" % cores.aapt_path)
+        if not os.access(aapt_cmd, os.X_OK):
+            raise Exception("aapt not executable: %s" % aapt_cmd)
+        try:
+            output = subprocess.check_output(
+                [aapt_cmd, "dump", "badging", self.path],
+                stderr=subprocess.STDOUT,
+            ).decode("utf-8", "ignore")
+        except subprocess.CalledProcessError as e:
+            raise Exception("failed to run aapt: %s" % e)
         if output == "":
             raise Exception("can't get the app info")
         match = re.compile("package: name='(\S+)'").match(
