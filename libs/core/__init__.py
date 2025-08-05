@@ -24,7 +24,7 @@ frida32_path = ""
 frida64_path = ""
 
 # aapt 所在路径
-aapt_apth = ""
+aapt_path = ""
 
 # 系统类型
 os_type = ""
@@ -48,7 +48,7 @@ class Bootstrapper(object):
         global adb_path
         global frida32_path
         global frida64_path
-        global aapt_apth
+        global aapt_path
         global os_type
         global output_path
         global script_root_dir
@@ -94,10 +94,20 @@ class Bootstrapper(object):
         unpacker_dir = os.path.join(tools_dir, "unpacker")
         if platform.system() == "Windows":
             adb_path = os.path.join(unpacker_dir, "adb.exe")
-            aapt_apth = os.path.join(unpacker_dir, "aapt.exe")
+            aapt_path = os.path.join(unpacker_dir, "aapt.exe")
         else:
             adb_path = shutil.which("adb") or os.path.join(unpacker_dir, "adb")
-            aapt_apth = shutil.which("aapt") or os.path.join(unpacker_dir, "aapt")
+            aapt_path = shutil.which("aapt") or os.path.join(unpacker_dir, "aapt")
+        for tool_name, tool in (("adb", adb_path), ("aapt", aapt_path)):
+            resolved = shutil.which(tool_name) or tool
+            if not os.path.exists(resolved) or not os.access(resolved, os.X_OK):
+                raise FileNotFoundError(
+                    "%s not found or not executable. Please ensure it is installed or placed in tools/unpacker" % tool_name
+                )
+            if tool_name == "adb":
+                adb_path = resolved
+            else:
+                aapt_path = resolved
         frida32_path = os.path.join(unpacker_dir, "hexl-server-arm32")
         frida64_path = os.path.join(unpacker_dir, "hexl-server-arm64")
         download_path = os.path.join(out_dir, "download")
@@ -149,3 +159,4 @@ class Bootstrapper(object):
             os.system(cmd)
             os.removedirs(new_dir)
             os.removedirs(old_dir)
+            
