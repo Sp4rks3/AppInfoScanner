@@ -91,10 +91,15 @@ class Bootstrapper(object):
 
         backsmali_path = os.path.join(tools_dir, "baksmali.jar")
         apktool_path = os.path.join(tools_dir, "apktool.jar")
-        adb_path = os.path.join(tools_dir + '\\unpacker', "adb.exe")
-        frida32_path = os.path.join(tools_dir + '\\unpacker', "hexl-server-arm32")
-        frida64_path = os.path.join(tools_dir + '\\unpacker', "hexl-server-arm64")
-        aapt_apth = os.path.join(tools_dir + '\\unpacker', "aapt.exe")
+        unpacker_dir = os.path.join(tools_dir, "unpacker")
+        if platform.system() == "Windows":
+            adb_path = os.path.join(unpacker_dir, "adb.exe")
+            aapt_apth = os.path.join(unpacker_dir, "aapt.exe")
+        else:
+            adb_path = shutil.which("adb") or os.path.join(unpacker_dir, "adb")
+            aapt_apth = shutil.which("aapt") or os.path.join(unpacker_dir, "aapt")
+        frida32_path = os.path.join(unpacker_dir, "hexl-server-arm32")
+        frida64_path = os.path.join(unpacker_dir, "hexl-server-arm64")
         download_path = os.path.join(out_dir, "download")
         txt_result_path = os.path.join(out_dir, "result_" + str(create_time) + ".txt")
         xls_result_path = os.path.join(out_dir, "result_" + str(create_time) + ".xlsx")
