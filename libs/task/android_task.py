@@ -387,8 +387,8 @@ class AndroidTask(object):
                 f"{cores.adb_path} shell \"setenforce 0\"",
             ),
             (
-                f"{cores.adb_path} shell su -c \"/data/local/tmp/hexl-server-arm64 &\"",
-                f"{cores.adb_path} shell \"/data/local/tmp/hexl-server-arm64 &\"",
+                f"{cores.adb_path} shell su -c \"sh -c '/data/local/tmp/hexl-server-arm64 <&- >&- 2>&- &'\"",
+                f"{cores.adb_path} shell \"sh -c '/data/local/tmp/hexl-server-arm64 <&- >&- 2>&- &'\"",
             ),
         ]
 
@@ -402,6 +402,16 @@ class AndroidTask(object):
                 print("[-] Running failed, please check the error in terminal")
                 exit()
 
+        check_cmd = f"{cores.adb_path} shell ps | grep -q hexl-server-arm64"
+        if subprocess.run(check_cmd, shell=True).returncode != 0:
+            print("[-] hexl-server-arm64 not running, retrying")
+            last_root_cmd, last_non_root_cmd = cmd_pairs[-1]
+            fallback_cmd = (
+                last_non_root_cmd if su_available else last_root_cmd
+            )
+            if not run_cmd(fallback_cmd) or subprocess.run(check_cmd, shell=True).returncode != 0:
+                print("[-] Failed to start hexl-server-arm64")
+                exit()
         print("[*] Frida Server started")
         aapt_cmd = cores.aapt_path or shutil.which("aapt")
         if not aapt_cmd:
@@ -419,11 +429,27 @@ class AndroidTask(object):
             raise Exception("can't get the app info")
         match = re.compile("package: name='(\S+)'").match(
             output)  # 通过正则匹配，获取包名
-        print(match.group(1))
-        cmd_str = ('frida-dexdump -U -f %s') % (str(match.group(1)))
+        # print(match.group(1))
+        # cmd_str = ('frida-dexdump -U -f %s') % (str(match.group(1)))
+        package_name = match.group(1)
+        print(package_name)
+        # Use spawn by default, but fall back to attaching to a running
+        # instance if spawning fails (e.g. when Gadget is required).
+        cmd_str = f"frida-dexdump -U -f {package_name}"
         if os.system(cmd_str) != 0:
-            print("An error occurred in the unpack")
-            exit()
+            # print("An error occurred in the unpack")
+            # exit()
+            print("[-] Spawn failed, trying to attach to a running process")
+            # Ensure the target application is running before attaching
+            start_cmd = (
+                f"{cores.adb_path} shell monkey -p {package_name} "
+                "-c android.intent.category.LAUNCHER 1 >/dev/null 2>&1"
+            )
+            os.system(start_cmd)
+            cmd_str = f"frida-dexdump -U -n {package_name}"
+            if os.system(cmd_str) != 0:
+                print("An error occurred in the unpack")
+                exit()
 
     def __decode_file__(self, file_path):
         apktool_path = str(cores.apktool_path)
