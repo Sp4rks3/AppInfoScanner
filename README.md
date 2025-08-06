@@ -1,7 +1,9 @@
- ![License](https://img.shields.io/badge/Version-V1.0.8-red) ![Language](https://img.shields.io/badge/Language-Python3-blue) ![License](https://img.shields.io/badge/License-GPL3.0-orange) [![HitCount](https://hits.dwyl.com/kelvinBen/kelvinBen/AppInfoScanner.svg?style=flat&show=unique)](http://hits.dwyl.com/kelvinBen/kelvinBen/AppInfoScanner)
-
+ ![License](https://img.shields.io/badge/Version-V1.0.8-red) ![Language](https://img.shields.io/badge/Language-Python3-blue) ![License](https://img.shields.io/badge/License-GPL3.0-orange) 
+ 
 
 该项目目前仅仅是规划项目中的冰山一角，如果您对此项目感兴趣或者想参与后继项目的开发工作或者翻译工作中，请发送邮件至blsm@vip.qq.com说明你的能力和诉求。
+
+修复了在mac上执行的一些bug,测试环境为mumu模拟器 V1.6.11（安卓12）
 
 ## AppInfoScanner
 
