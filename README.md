@@ -5,6 +5,10 @@
 
 修复了在mac上执行的一些bug,测试环境为mumu模拟器 V1.6.11（安卓12）
 
+现阶段，我更愿意把当前项目当作是自动化利用 frida-dexdump 脱壳的工具，顺便从中提取一些敏感信息。
+
+从apk提取敏感信息有更好用的工具 [apkleaks](https://github.com/dwisiswant0/apkleaks)
+
 ## AppInfoScanner
 
 一款适用于以HW行动/红队/渗透测试团队为场景的移动端(Android、iOS、WEB、H5、静态网站)信息收集扫描工具，可以帮助渗透测试工程师、攻击队成员、红队成员快速收集到移动端或者静态WEB站点中关键的资产信息并提供基本的信息输出,如：Title、Domain、CDN、指纹信息、状态信息等。
