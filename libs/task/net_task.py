@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 # Author: kelvinBen
 # Github: https://github.com/kelvinBen/AppInfoScanner
+import os
 
 import openpyxl
 import config
@@ -106,5 +107,4 @@ class NetTask(object):
 
     def __write_content_in_file__(self, file_path, content):
         with open(file_path, "a+", encoding='utf-8', errors='ignore') as f:
-            f.write(content+"\r")
-            f.close()
+            f.write(content + os.linesep)

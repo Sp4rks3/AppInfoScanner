@@ -136,13 +136,12 @@ class BaseTask(object):
             value_list = []
             with open(txt_result_path, "a+", encoding='utf-8', errors='ignore') as f:
                 for key, value in self.result_dict.items():
-                    f.write(key+"\r")
+                    f.write(key + os.linesep)
                     for result in value:
                         if result in value_list:
                             continue
                         value_list.append(result)
-                        f.write("\t"+result+"\r")
-                f.close()
+                        f.write("\t" + result + os.linesep)
             print("[*] For more information about the search, see TXT file result: %s" %
                   (txt_result_path))
 
